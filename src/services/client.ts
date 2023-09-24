@@ -1,31 +1,15 @@
 import { ChatMessage } from "../types/chatMessage";
 
+const WS_URL = import.meta.env.VITE_API_ENDPOINT;
+
 export class Client {
-    private socket: WebSocket | undefined;
+    private socket: WebSocket;
 
-    constructor() {}
-
-    checkSocket(): WebSocket {
-        if (!this.socket) {
-            throw new Error("Socket is not initialized");
-        }
-        return this.socket;
-    }
-
-    initilize(
-        receiveMessageCallback: ({ username, message }: ChatMessage) => void
-    ) {
-        const wsURL =
-            "wss://yq8tto4zje.execute-api.us-east-2.amazonaws.com/production";
-        this.socket = new WebSocket(wsURL);
+    constructor(receiveMessageCallback: (chatMessage: ChatMessage) => void) {
+        this.socket = new WebSocket(WS_URL);
 
         this.socket.onopen = () => {
             console.log("Connected to the WebSocket");
-        };
-
-        this.socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            receiveMessageCallback(data);
         };
 
         this.socket.onclose = (event) => {
@@ -41,14 +25,22 @@ export class Client {
         this.socket.onerror = (error) => {
             console.error(`[error] ${error}`);
         };
+
+        this.socket.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            receiveMessageCallback(data);
+        };
     }
 
+    initilize() {}
+
     sendMessage(message: ChatMessage) {
-        const socket = this.checkSocket();
         const data = {
             action: "sendmessage",
-            message,
+            message: message.message,
+            username: message.username,
         };
-        socket.send(JSON.stringify(data));
+
+        this.socket.send(JSON.stringify(data));
     }
 }

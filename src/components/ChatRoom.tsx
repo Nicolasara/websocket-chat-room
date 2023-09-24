@@ -1,8 +1,7 @@
 import { useState, useEffect } from "react";
 import { ChatMessage } from "../types/chatMessage";
 import Message from "./Message";
-
-const WS_URL = import.meta.env.VITE_API_ENDPOINT;
+import { Client } from "../services/client";
 
 interface ChatRoomProps {
     username: string;
@@ -11,7 +10,7 @@ interface ChatRoomProps {
 function ChatRoom({ username }: ChatRoomProps) {
     const [messages, setMessages] = useState<ChatMessage[]>([]);
     const [inputValue, setInputValue] = useState("");
-    const [socket] = useState<WebSocket>(new WebSocket(WS_URL));
+    const [client, setClient] = useState<Client>();
 
     function sendMessage() {
         const newMessage: ChatMessage = {
@@ -19,13 +18,8 @@ function ChatRoom({ username }: ChatRoomProps) {
             message: inputValue,
         };
 
-        const data = {
-            action: "sendmessage",
-            message: newMessage.message,
-            username: newMessage.username,
-        };
-
-        socket.send(JSON.stringify(data));
+        if (!client) throw new Error("Client not initialized");
+        client.sendMessage(newMessage);
         setMessages((prevMessages) => [...prevMessages, newMessage]);
         setInputValue("");
     }
@@ -35,29 +29,7 @@ function ChatRoom({ username }: ChatRoomProps) {
     }
 
     useEffect(() => {
-        socket.onopen = () => {
-            console.log("Connected to the WebSocket");
-        };
-
-        socket.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            console.log(data);
-            handleReceiveMessage(data);
-        };
-
-        socket.onclose = (event) => {
-            if (event.wasClean) {
-                console.log(
-                    `Closed cleanly, code=${event.code}, reason=${event.reason}`
-                );
-            } else {
-                console.error("Connection died");
-            }
-        };
-
-        socket.onerror = (error) => {
-            console.error(`[error] ${error}`);
-        };
+        setClient(new Client(handleReceiveMessage));
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
