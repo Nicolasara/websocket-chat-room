@@ -2,8 +2,7 @@ import { useState, useEffect } from "react";
 import { ChatMessage } from "../types/chatMessage";
 import Message from "./Message";
 
-const WS_URL =
-    "wss://yq8tto4zje.execute-api.us-east-2.amazonaws.com/production";
+const WS_URL = import.meta.env.VITE_API_ENDPOINT;
 
 interface ChatRoomProps {
     username: string;
